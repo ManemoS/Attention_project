@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_description">Lets App Lock see which app is open so it can block the apps you chose during a lock period. It does not read or store anything you type or see.</string>
+</resources>
