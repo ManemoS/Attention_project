@@ -27,6 +27,8 @@ class LockStatus {
     required this.unlockMinutes,
     required this.startLocked,
     required this.repeat,
+    required this.record,
+    required this.recording,
   });
 
   factory LockStatus.fromMap(Map<String, dynamic> map) => LockStatus(
@@ -40,6 +42,8 @@ class LockStatus {
         unlockMinutes: map['unlockMinutes'] as int? ?? 15,
         startLocked: map['startLocked'] as bool? ?? true,
         repeat: map['repeat'] as bool? ?? true,
+        record: map['record'] as bool? ?? false,
+        recording: map['recording'] as bool? ?? false,
       );
 
   final bool active;
@@ -54,6 +58,12 @@ class LockStatus {
   final int unlockMinutes;
   final bool startLocked;
   final bool repeat;
+
+  /// Whether the session was set to record the lecture.
+  final bool record;
+
+  /// Whether the microphone is listening right now.
+  final bool recording;
 
   /// True when the current phase is the last one before a non-repeating session ends.
   bool get isFinalPhase => !repeat && locked != startLocked;
@@ -74,6 +84,13 @@ class AppLock {
   static Future<void> openAccessibilitySettings() =>
       _channel.invokeMethod<void>('openAccessibilitySettings');
 
+  /// Asks for the microphone permission if needed. Returns true once it is granted.
+  static Future<bool> requestMicPermission() async =>
+      await _channel.invokeMethod<bool>('requestMicPermission') ?? false;
+
+  /// Folder holding one transcript per recorded session (see LectureRecorderService.kt).
+  static Future<String> lecturesDir() async => (await _channel.invokeMethod<String>('getLecturesDir'))!;
+
   static Future<LockStatus> status() async =>
       LockStatus.fromMap(await _channel.invokeMapMethod<String, dynamic>('getState') ?? const {});
 
@@ -83,6 +100,7 @@ class AppLock {
     required int unlockMinutes,
     required bool startLocked,
     required bool repeat,
+    required bool record,
     required String code,
   }) =>
       _channel.invokeMethod<void>('startSession', {
@@ -91,6 +109,7 @@ class AppLock {
         'unlockMinutes': unlockMinutes,
         'startLocked': startLocked,
         'repeat': repeat,
+        'record': record,
         'code': code,
       });
 

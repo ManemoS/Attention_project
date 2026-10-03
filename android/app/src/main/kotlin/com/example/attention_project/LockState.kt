@@ -20,6 +20,7 @@ object LockState {
     private const val KEY_UNLOCK_MINUTES = "unlockMinutes"
     private const val KEY_START_LOCKED = "startLocked"
     private const val KEY_REPEAT = "repeat"
+    private const val KEY_RECORD = "record"
     private const val KEY_START_MILLIS = "startMillis"
     private const val KEY_CODE_HASH = "codeHash"
 
@@ -35,6 +36,10 @@ object LockState {
     fun unlockMinutes(context: Context) = prefs(context).getInt(KEY_UNLOCK_MINUTES, 15)
     fun startLocked(context: Context) = prefs(context).getBoolean(KEY_START_LOCKED, true)
     fun repeat(context: Context) = prefs(context).getBoolean(KEY_REPEAT, true)
+    fun record(context: Context) = prefs(context).getBoolean(KEY_RECORD, false)
+
+    /** When the current (or most recent) session started. Also names its lecture transcript. */
+    fun startMillis(context: Context) = prefs(context).getLong(KEY_START_MILLIS, 0L)
 
     fun start(
         context: Context,
@@ -43,6 +48,7 @@ object LockState {
         unlockMinutes: Int,
         startLocked: Boolean,
         repeat: Boolean,
+        record: Boolean,
         code: String,
     ) {
         prefs(context).edit()
@@ -51,6 +57,7 @@ object LockState {
             .putInt(KEY_UNLOCK_MINUTES, unlockMinutes.coerceIn(1, MAX_MINUTES))
             .putBoolean(KEY_START_LOCKED, startLocked)
             .putBoolean(KEY_REPEAT, repeat)
+            .putBoolean(KEY_RECORD, record)
             .putString(KEY_CODE_HASH, hash(code))
             .putLong(KEY_START_MILLIS, System.currentTimeMillis())
             .putBoolean(KEY_ACTIVE, true)

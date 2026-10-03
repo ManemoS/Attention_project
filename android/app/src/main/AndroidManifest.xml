@@ -1,4 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Sends lecture transcripts to Claude for a summary. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Lecture recording during a lock session. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
         android:label="APLS"
         android:name="${applicationName}"
@@ -44,6 +51,10 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/app_lock_service" />
         </service>
+        <service
+            android:name=".LectureRecorderService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -64,6 +75,10 @@
         <intent>
             <action android:name="android.intent.action.MAIN"/>
             <category android:name="android.intent.category.LAUNCHER"/>
+        </intent>
+        <!-- Lets the lecture recorder find the phone's speech recognizer. -->
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
         </intent>
     </queries>
 </manifest>

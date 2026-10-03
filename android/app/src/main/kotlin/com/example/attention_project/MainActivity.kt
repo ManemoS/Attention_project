@@ -1,11 +1,13 @@
 package com.example.attention_project
 
+import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -16,7 +18,11 @@ class MainActivity : FlutterActivity() {
     companion object {
         private const val CHANNEL = "attention_project/app_lock"
         private const val ICON_SIZE = 96
+        private const val MIC_PERMISSION_REQUEST = 1
     }
+
+    /** Waiting for the user to answer the microphone permission prompt. */
+    private var micPermissionResult: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -36,9 +42,14 @@ class MainActivity : FlutterActivity() {
 
                 "getState" -> result.success(state())
 
+                "requestMicPermission" -> requestMicPermission(result)
+
+                "getLecturesDir" -> result.success(LectureRecorderService.lecturesDir(this).absolutePath)
+
                 "startSession" -> {
                     val packages = call.argument<List<String>>("packages").orEmpty()
                     val code = call.argument<String>("code").orEmpty()
+                    val record = (call.argument<Boolean>("record") ?: false) && hasMicPermission()
                     if (packages.isEmpty() || code.length < 4) {
                         result.error("invalid", "Choose at least one app and a code of 4+ digits", null)
                         return@setMethodCallHandler
@@ -50,12 +61,18 @@ class MainActivity : FlutterActivity() {
                         call.argument<Int>("unlockMinutes") ?: 15,
                         call.argument<Boolean>("startLocked") ?: true,
                         call.argument<Boolean>("repeat") ?: true,
+                        record,
                         code,
                     )
+                    if (record) LectureRecorderService.start(this)
                     result.success(null)
                 }
 
-                "stopSession" -> result.success(LockState.stop(this, call.argument<String>("code").orEmpty()))
+                "stopSession" -> {
+                    val stopped = LockState.stop(this, call.argument<String>("code").orEmpty())
+                    if (stopped) LectureRecorderService.stop(this)
+                    result.success(stopped)
+                }
 
                 else -> result.notImplemented()
             }
@@ -73,7 +90,36 @@ class MainActivity : FlutterActivity() {
             "unlockMinutes" to LockState.unlockMinutes(this),
             "startLocked" to LockState.startLocked(this),
             "repeat" to LockState.repeat(this),
+            "record" to LockState.record(this),
+            "recording" to LectureRecorderService.isRunning,
         )
+    }
+
+    private fun hasMicPermission() =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+            checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+
+    /** Asks for the microphone (and, on Android 13+, notifications for the "Recording" notice). */
+    private fun requestMicPermission(result: MethodChannel.Result) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || hasMicPermission()) {
+            result.success(true)
+            return
+        }
+        micPermissionResult?.success(false)
+        micPermissionResult = result
+        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            arrayOf(Manifest.permission.RECORD_AUDIO)
+        }
+        requestPermissions(permissions, MIC_PERMISSION_REQUEST)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != MIC_PERMISSION_REQUEST) return
+        micPermissionResult?.success(hasMicPermission())
+        micPermissionResult = null
     }
 
     private fun installedApps(): List<Map<String, Any>> {

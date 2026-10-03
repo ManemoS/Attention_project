@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import 'app_lock.dart';
 import 'app_picker_page.dart';
+import 'lectures_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,6 +25,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int _unlockMinutes = 15;
   bool _startLocked = true;
   bool _repeat = true;
+  bool _record = false;
   final _codeController = TextEditingController();
   final _confirmController = TextEditingController();
 
@@ -62,6 +64,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _unlockMinutes = status.unlockMinutes;
         _startLocked = status.startLocked;
         _repeat = status.repeat;
+        _record = status.record;
       }
       _status = status;
       _accessibilityOn = accessibilityOn;
@@ -86,12 +89,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _start() async {
+    if (_record && !await AppLock.requestMicPermission()) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Recording needs the microphone. Allow it in Settings → Apps → APLS → Permissions, '
+            'or turn off "Record lecture".'),
+      ));
+      return;
+    }
     await AppLock.start(
       packages: _selectedApps.keys.toList(),
       lockMinutes: _lockMinutes,
       unlockMinutes: _unlockMinutes,
       startLocked: _startLocked,
       repeat: _repeat,
+      record: _record,
       code: _codeController.text,
     );
     _codeController.clear();
@@ -139,7 +151,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final status = _status;
     return Scaffold(
-      appBar: AppBar(title: const Text('App Lock')),
+      appBar: AppBar(
+        title: const Text('App Lock'),
+        actions: [
+          IconButton(
+            tooltip: 'Lecture notes',
+            icon: const Icon(Icons.notes),
+            onPressed: () =>
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const LecturesPage())),
+          ),
+        ],
+      ),
       body: status == null
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -227,6 +249,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             : 'Stop after one locked and one unlocked period'),
         value: _repeat,
         onChanged: (value) => setState(() => _repeat = value),
+      ),
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Record lecture'),
+        subtitle: const Text('Writes down what is said nearby until the session ends, '
+            'so you can summarize it in Lecture notes'),
+        value: _record,
+        onChanged: (value) => setState(() => _record = value),
       ),
       const SizedBox(height: 16),
       Text('Cancel code', style: textTheme.titleSmall),
@@ -332,6 +362,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         '${status.repeat ? ' · repeating' : ''}',
         textAlign: TextAlign.center,
       ),
+      if (status.recording) ...[
+        const SizedBox(height: 8),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [Icon(Icons.mic, size: 18), SizedBox(width: 4), Text('Recording lecture')],
+        ),
+      ],
       const SizedBox(height: 16),
       Text('Apps', style: textTheme.titleSmall),
       const SizedBox(height: 8),
