@@ -1,4 +1,4 @@
-name: attention_project
+﻿name: attention_project
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -30,12 +30,17 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   http: ^1.6.0
   shared_preferences: ^2.5.3
+  flutter_gemma: 0.12.6
+  whisper_ggml: 2.9.0
+  ffmpeg_kit_flutter_new_min: 2.1.0
 
 dev_dependencies:
   flutter_test:
@@ -74,6 +79,32 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Font licenses, shown on the licenses page (see main.dart).
+  assets:
+    - assets/fonts/SpaceGrotesk-OFL.txt
+    - assets/fonts/Manrope-OFL.txt
+
+  # Bundled so the app looks the same offline. LockActivity.kt also loads Space Grotesk from here.
+  fonts:
+    - family: Space Grotesk
+      fonts:
+        - asset: assets/fonts/SpaceGrotesk-500.ttf
+          weight: 500
+        - asset: assets/fonts/SpaceGrotesk-600.ttf
+          weight: 600
+        - asset: assets/fonts/SpaceGrotesk-700.ttf
+          weight: 700
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope-400.ttf
+          weight: 400
+        - asset: assets/fonts/Manrope-500.ttf
+          weight: 500
+        - asset: assets/fonts/Manrope-600.ttf
+          weight: 600
+        - asset: assets/fonts/Manrope-700.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

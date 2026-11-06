@@ -1,8 +1,21 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'home_page.dart';
+import 'app_shell.dart';
+import 'settings.dart';
+import 'theme.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  LicenseRegistry.addLicense(() async* {
+    for (final (family, file) in [('Space Grotesk', 'SpaceGrotesk'), ('Manrope', 'Manrope')]) {
+      yield LicenseEntryWithLineBreaks([family], await rootBundle.loadString('assets/fonts/$file-OFL.txt'));
+    }
+  });
+  // Read before the first frame, so the right theme and tabs show straight away.
+  await AppSettings.instance.load();
   runApp(const AppLockApp());
 }
 
@@ -11,11 +24,26 @@ class AppLockApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'App Lock',
-      theme: ThemeData(colorSchemeSeed: Colors.indigo),
-      darkTheme: ThemeData(colorSchemeSeed: Colors.indigo, brightness: Brightness.dark),
-      home: const HomePage(),
+    return ListenableBuilder(
+      listenable: AppSettings.instance,
+      builder: (context, _) => MaterialApp(
+        // Wording comes from `.tr`, which screens read as they build, so changing the language
+        // rebuilds the whole app.
+        key: ValueKey(AppSettings.instance.isThai),
+        title: 'APLS',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: AppSettings.instance.themeMode,
+        locale: AppSettings.instance.locale,
+        supportedLocales: const [Locale('en'), Locale('th')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: const AppRoot(),
+      ),
     );
   }
 }

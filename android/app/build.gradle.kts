@@ -7,8 +7,10 @@ plugins {
 
 android {
     namespace = "com.example.attention_project"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
+    // On-device AI (flutter_gemma, whisper_ggml) pulls in AndroidX libraries built against SDK 36.
+    compileSdk = 36
+    // whisper_ggml builds whisper.cpp with this NDK.
+    ndkVersion = "29.0.13113456"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -24,7 +26,8 @@ android {
         applicationId = "com.example.attention_project"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // Android 7.0+, the oldest the on-device AI runs on.
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

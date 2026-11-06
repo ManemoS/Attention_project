@@ -1,11 +1,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Sends lecture transcripts to Claude for a summary. -->
+    <!-- Downloads the on-phone AI models once; sends transcripts to Claude only if chosen in Settings. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Lecture recording during a lock session. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Class timer: buzzes when a lesson segment's time is up, even with the screen off. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Timetable: locks apps when a class starts, on time, and again after a restart. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
         android:label="APLS"
         android:name="${applicationName}"
@@ -55,6 +62,30 @@
             android:name=".LectureRecorderService"
             android:exported="false"
             android:foregroundServiceType="microphone" />
+        <service
+            android:name=".ClassTimerService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Lesson plan timer that vibrates when a lecture segment's time is up" />
+        </service>
+        <receiver android:name=".FocusWidget" android:exported="false" android:label="APLS focus">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/focus_widget_info" />
+        </receiver>
+        <receiver android:name=".TimetableReceiver" android:exported="false" />
+        <receiver android:name=".TimetableBootReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -76,9 +107,9 @@
             <action android:name="android.intent.action.MAIN"/>
             <category android:name="android.intent.category.LAUNCHER"/>
         </intent>
-        <!-- Lets the lecture recorder find the phone's speech recognizer. -->
+        <!-- Lets Ask your notes find the phone's text-to-speech engine to read answers aloud. -->
         <intent>
-            <action android:name="android.speech.RecognitionService"/>
+            <action android:name="android.intent.action.TTS_SERVICE"/>
         </intent>
     </queries>
 </manifest>
